@@ -10,7 +10,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;     // reference to User Service
+    private Long userId;
     private String product;
     private int quantity;
     private String status;
