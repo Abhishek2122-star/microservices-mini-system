@@ -3,6 +3,8 @@ package com.example.user.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -16,27 +18,24 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ Open endpoints
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/users/register").permitAll()
-
-                        // ✅ Admin-only user management
-                        .requestMatchers("/users/**").hasRole("ADMIN")
-
-                        // ✅ Internal endpoint for order-service validation
-                        .requestMatchers("/users/internal/**").hasAnyRole("USER","ADMIN")
-
-                        // ✅ Orders accessible to both USER and ADMIN
-                        .requestMatchers("/orders/**").hasAnyRole("USER","ADMIN")
-
-                        // ✅ Everything else requires authentication
-                        .anyRequest().authenticated()
+                        .requestMatchers("/auth/**").permitAll()      // login/register open
+                        .requestMatchers("/users/**").authenticated() // protect user endpoints
+                        .anyRequest().permitAll()
                 )
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // ✅ Add PasswordEncoder bean
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
