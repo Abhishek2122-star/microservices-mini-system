@@ -1,8 +1,10 @@
 package com.example.order.controller;
 
 import com.example.order.entity.Order;
-import com.example.order.repository.OrderRepository;
-import com.example.order.client.UserClient;
+import com.example.order.service.OrderService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,39 +13,67 @@ import java.util.List;
 @RequestMapping("/orders")
 public class OrderController {
 
-    private final OrderRepository orderRepository;
-    private final UserClient userClient;
+    private final OrderService orderService;
 
-    public OrderController(OrderRepository orderRepository, UserClient userClient) {
-        this.orderRepository = orderRepository;
-        this.userClient = userClient;
-    }
-
-    @GetMapping
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
     }
 
     @PostMapping
-    public String createOrder(@RequestBody Order order) {
-        Object user = userClient.getUserById(order.getUserId());
-
-        if (user == null) {
-            return "User not found. Cannot create order.";
+    public ResponseEntity<?> createOrder(@RequestBody Order order, Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
         }
-
-        orderRepository.save(order);
-        return "Order created successfully for user " + order.getUserId();
+        order.setUserEmail(auth.getName()); // ✅ ownership by JWT email
+        order.setStatus("CREATED");
+        return ResponseEntity.ok(orderService.createOrder(order));
     }
 
-    @GetMapping("/{id}")
-    public Order getOrderById(@PathVariable Long id) {
-        return orderRepository.findById(id).orElse(null);
+    @GetMapping
+    public ResponseEntity<?> getOrders(Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
+        }
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        if (role.equals("ROLE_ADMIN")) {
+            return ResponseEntity.ok(orderService.getAllOrders());
+        } else {
+            return ResponseEntity.ok(orderService.getOrdersByUserEmail(auth.getName()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateOrder(@PathVariable Long id, @RequestBody Order order, Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
+        }
+        Order existing = orderService.getOrderById(id);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        if (!role.equals("ROLE_ADMIN") && !existing.getUserEmail().equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Not allowed");
+        }
+        order.setId(id);
+        order.setUserEmail(existing.getUserEmail()); // keep ownership unchanged
+        return ResponseEntity.ok(orderService.updateOrder(order));
     }
 
     @DeleteMapping("/{id}")
-    public String deleteOrder(@PathVariable Long id) {
-        orderRepository.deleteById(id);
-        return "Order deleted successfully";
+    public ResponseEntity<?> deleteOrder(@PathVariable Long id, Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
+        }
+        Order existing = orderService.getOrderById(id);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        if (!role.equals("ROLE_ADMIN") && !existing.getUserEmail().equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Not allowed");
+        }
+        orderService.deleteOrder(id);
+        return ResponseEntity.noContent().build();
     }
 }

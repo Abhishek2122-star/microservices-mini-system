@@ -1,45 +1,31 @@
 package com.example.user.service;
 
-
-import com.example.user.dto.UserDTO;
 import com.example.user.entity.User;
 import com.example.user.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    public UserService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public List<UserDTO> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public User registerUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return userRepository.save(user);
     }
 
-    public UserDTO getUserById(Long id) {
-        return userRepository.findById(id)
-                .map(this::convertToDTO)
-                .orElse(null);
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElse(null);
     }
 
-    public UserDTO createUser(User user) {
-        return convertToDTO(userRepository.save(user));
-    }
-
-    private UserDTO convertToDTO(User user) {
-        UserDTO dto = new UserDTO();
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setRole(user.getRole());
-        return dto;
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 }

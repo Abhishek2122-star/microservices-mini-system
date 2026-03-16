@@ -19,8 +19,21 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/users/register").permitAll() // only login & register open
-                        .anyRequest().authenticated()                              // everything else requires JWT
+                        // ✅ Open endpoints
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/users/register").permitAll()
+
+                        // ✅ Admin-only user management
+                        .requestMatchers("/users/**").hasRole("ADMIN")
+
+                        // ✅ Internal endpoint for order-service validation
+                        .requestMatchers("/users/internal/**").hasAnyRole("USER","ADMIN")
+
+                        // ✅ Orders accessible to both USER and ADMIN
+                        .requestMatchers("/orders/**").hasAnyRole("USER","ADMIN")
+
+                        // ✅ Everything else requires authentication
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

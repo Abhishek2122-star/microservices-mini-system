@@ -1,4 +1,4 @@
-package com.example.order.config;  // adjust for order service
+package com.example.order.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,9 +12,14 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .formLogin(form -> form.disable())   // ✅ disable login form
-                .httpBasic(basic -> basic.disable()); // ✅ disable basic auth
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/orders/**").authenticated()
+                        .anyRequest().permitAll()
+                )
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt()); // ✅ JWT enabled
+
         return http.build();
     }
 }

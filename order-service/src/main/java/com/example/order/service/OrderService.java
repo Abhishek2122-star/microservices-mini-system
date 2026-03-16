@@ -1,45 +1,41 @@
 package com.example.order.service;
 
-import com.example.order.dto.OrderDTO;
 import com.example.order.entity.Order;
 import com.example.order.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
 
     private final OrderRepository orderRepository;
+
     public OrderService(OrderRepository orderRepository) {
         this.orderRepository = orderRepository;
     }
 
-    public List<OrderDTO> getAllOrders() {
-        return orderRepository.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public Order createOrder(Order order) {
+        return orderRepository.save(order);
     }
 
-    public OrderDTO getOrderById(Long id) {
-        return orderRepository.findById(id)
-                .map(this::convertToDTO)
-                .orElse(null);
+    public Order getOrderById(Long id) {
+        return orderRepository.findById(id).orElse(null);
     }
 
-    public OrderDTO createOrder(Order order) {
-        return convertToDTO(orderRepository.save(order));
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
     }
 
-    private OrderDTO convertToDTO(Order order) {
-        OrderDTO dto = new OrderDTO();
-        dto.setId(order.getId());
-        dto.setUserId(order.getUserId());
-        dto.setProduct(order.getProduct());
-        dto.setQuantity(order.getQuantity());
-        dto.setStatus(order.getStatus());
-        return dto;
+    public List<Order> getOrdersByUserEmail(String email) {
+        return orderRepository.findByUserEmail(email);
+    }
+
+    public Order updateOrder(Order order) {
+        return orderRepository.save(order);
+    }
+
+    public void deleteOrder(Long id) {
+        orderRepository.deleteById(id);
     }
 }

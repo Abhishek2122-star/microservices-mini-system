@@ -1,9 +1,6 @@
 package com.example.order.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "orders")
@@ -13,30 +10,27 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
-    @NotBlank(message = "Product name is required")
     private String product;
-
-    @Min(value = 1, message = "Quantity must be at least 1")
     private int quantity;
 
-    @NotBlank(message = "Status is required")
+    // ✅ Ownership by email, not userId
+    @Column(name = "user_email", nullable = false)
+    private String userEmail;
+
     private String status;
 
-    // --- Getters and Setters ---
+    // getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getProduct() { return product; }
     public void setProduct(String product) { this.product = product; }
 
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
+
+    public String getUserEmail() { return userEmail; }
+    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
