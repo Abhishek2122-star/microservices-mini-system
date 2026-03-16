@@ -1,44 +1,44 @@
 package com.example.user.controller;
 
+import com.example.user.config.JwtUtil;
 import com.example.user.entity.User;
 import com.example.user.repository.UserRepository;
-import com.example.user.config.JwtUtil;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthController(UserRepository userRepository,
-                          PasswordEncoder passwordEncoder,
-                          JwtUtil jwtUtil) {
+    public AuthController(UserRepository userRepository, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User newUser) {
+        if (userRepository.findByEmail(newUser.getEmail()) != null) {
+            return ResponseEntity.status(400).body("User already exists");
+        }
+        newUser.setRole("USER"); // default role
+        newUser.setPassword(passwordEncoder.encode(newUser.getPassword())); // ✅ hash password
+        userRepository.save(newUser);
+        return ResponseEntity.ok("User registered successfully");
     }
 
     @PostMapping("/login")
-    public Map<String, String> login(@RequestBody Map<String, String> loginRequest) {
-        String email = loginRequest.get("email");
-        String password = loginRequest.get("password");
-
-        User user = userRepository.findByEmail(email);
-        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+    public ResponseEntity<?> login(@RequestBody User loginRequest) {
+        User user = userRepository.findByEmail(loginRequest.getEmail());
+        if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            return ResponseEntity.status(401).body("Invalid credentials");
         }
-
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
-
-        Map<String, String> response = new HashMap<>();
-        response.put("token", token);
-        return response;
+        return ResponseEntity.ok(token);
     }
 }

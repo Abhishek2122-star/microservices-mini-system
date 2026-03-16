@@ -12,8 +12,7 @@ public class JwtConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        // ✅ Must be at least 32 characters
-        String secretKey = "mysupersecurejwtsecretkey1234567890abcd";
+        String secretKey = "mysupersecurejwtsecretkey1234567890abcd9876543210zyxw"; // same as user-service
         return NimbusJwtDecoder.withSecretKey(
                 new SecretKeySpec(secretKey.getBytes(), "HmacSHA256")
         ).build();
