@@ -5,14 +5,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collections;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -26,43 +25,35 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain chain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String path = request.getServletPath();
-        System.out.println("🔍 JwtFilter intercepting path: " + path);
+        final String authHeader = request.getHeader("Authorization");
 
-        // ✅ Skip JWT validation for login/register
-        if (path.startsWith("/auth/") || path.equals("/users/register")) {
-            System.out.println("➡️ Skipping JWT validation for: " + path);
-            chain.doFilter(request, response);
-            return;
-        }
-
-        String authHeader = request.getHeader("Authorization");
+        String username = null;
         String token = null;
-        String email = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             if (jwtUtil.isTokenValid(token)) {
-                email = jwtUtil.extractUsername(token); // here "username" is actually email
+                username = jwtUtil.extractUsername(token);
             }
         }
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            String role = jwtUtil.extractClaims(token).get("role", String.class);
-
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // ✅ Build authentication object
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(
-                            email,
+                            username,
                             null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                            Collections.emptyList() // you can map roles here if needed
                     );
-
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            // ✅ Set authentication in context
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 }
