@@ -24,7 +24,7 @@ public class OrderController {
         if (auth == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or invalid token");
         }
-        order.setUserEmail(auth.getName()); // ✅ ownership by JWT email
+        order.setUserEmail(auth.getName()); // ✅ ownership by JWT subject (email)
         order.setStatus("CREATED");
         return ResponseEntity.ok(orderService.createOrder(order));
     }
