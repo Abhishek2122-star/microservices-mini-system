@@ -14,7 +14,7 @@ public class SecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
         converter.setAuthorityPrefix("ROLE_");
-        converter.setAuthoritiesClaimName("role");
+        converter.setAuthoritiesClaimName("role"); // map "role" claim from JWT
 
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(converter);
@@ -30,7 +30,6 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
-
         return http.build();
     }
 }

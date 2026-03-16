@@ -26,7 +26,7 @@ public class AuthController {
         if (userRepository.findByEmail(newUser.getEmail()) != null) {
             return ResponseEntity.status(400).body("User already exists");
         }
-        newUser.setRole("USER"); // default role
+        newUser.setRole(newUser.getRole() == null ? "USER" : newUser.getRole()); // default role if not provided
         newUser.setPassword(passwordEncoder.encode(newUser.getPassword())); // ✅ hash password
         userRepository.save(newUser);
         return ResponseEntity.ok("User registered successfully");
